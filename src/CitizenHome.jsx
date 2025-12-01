@@ -3,7 +3,7 @@ import logo from "./assets/logo.jpg";
 import { MapPin, FileText, Star } from "lucide-react";
 import NewReportModal from "./NewReportModal";   // 👈 CORRECTO
 
-export default function CitizenHome({ user, onNavigate }) {
+export default function CitizenHome({ user, onNavigate, onLogout }) {
   const [showNewReport, setShowNewReport] = useState(false);
 
   return (
@@ -35,7 +35,18 @@ export default function CitizenHome({ user, onNavigate }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-gray-700">{user?.full_name}</span>
+            <span className="text-xl font-bold text-[#00000]">{user?.full_name}</span>
+
+
+            <button
+              onClick={() => {
+                onLogout();
+                onNavigate("welcome");
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg transition"
+            >
+              Cerrar sesion
+            </button>
           </div>
         </nav>
 
@@ -43,7 +54,7 @@ export default function CitizenHome({ user, onNavigate }) {
         <p className="text-xl mb-8">
           👉 “Hola, {user?.full_name} 👋 Gracias por aportar y cuidar tu comunidad”
         </p>
-
+        
         {/* Tarjetas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {/* Registrar queja */}
@@ -87,6 +98,33 @@ export default function CitizenHome({ user, onNavigate }) {
               Calificar
             </button>
           </div>
+        </div>
+        {/* Textos */}
+        <div className="space-y-3 text-gray-600 leading-relaxed">
+
+          <p className="flex justify-center mb-8 text-xl font-bold text-[#00000] mt-7">  🌍 UrbanReport: La voz de tu comunidad</p>
+
+          <p>
+            🕊️ “Una plataforma donde los ciudadanos reportan, las entidades responden y juntos
+mejoramos Buenaventura.”
+
+
+          </p>
+
+          <p>📱 Con UrbanReport puedes:</p>
+
+          <p>
+            🧩 Reportar problemas de tu barrio (basura, huecos, alumbrado, etc.)
+          </p>
+
+          <p>
+              🏛️ Hacer seguimiento y calificar la atención recibida
+          </p>
+
+          <p>
+              💚 Ser parte activa del cambio que nuestra ciudad necesitas
+          </p>
+
         </div>
       </div>
     </>

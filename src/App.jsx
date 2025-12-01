@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import CitizenHome from "./CitizenHome";
+import Welcome from "./Welcome";
 import { FileText, LogOut, Plus, Clock, CheckCircle, XCircle, AlertCircle, BarChart3, Edit2, Mail, Phone, MapPin, User, Lock, UserPlus, Search, X, Save, Upload, Image as ImageIcon, Zap, TrendingUp } from 'lucide-react';
 import { supabase, getCategories, uploadFile } from './lib/supabase.js';
 import logo from "./assets/logo.jpg";
@@ -8,26 +9,37 @@ import logo from "./assets/logo.jpg";
 // COMPONENTE PRINCIPAL
 // ============================================
 export default function App() {
-  const [currentView, setCurrentView] = useState('login');
+  const [currentView, setCurrentView] = useState('welcome');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay sesión guardada
     const savedUser = localStorage.getItem('user');
+    
     if (savedUser) {
       const userData = JSON.parse(savedUser);
       setUser(userData);
-      setCurrentView('login');
-
+      setCurrentView(
+        userData.role === 'admin' || userData.role === 'entity_user'
+          ? 'admin'
+          : 'inicio'
+      );
+    } else {
+      setCurrentView('welcome'); // <- corregido
     }
+
     setLoading(false);
   }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    setCurrentView(userData.role === 'admin' || userData.role === 'entity_user' ? 'admin' : 'inicio');
+
+    setCurrentView(
+      userData.role === 'admin' || userData.role === 'entity_user'
+        ? 'admin'
+        : 'inicio'
+    );
   };
 
   const handleLogout = () => {
@@ -35,9 +47,6 @@ export default function App() {
     localStorage.removeItem('user');
     setCurrentView('login');
   };
-
-
-
 
   if (loading) {
     return (
@@ -50,11 +59,29 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white">
 
-      {currentView === 'login' && <Login onLogin={handleLogin} onNavigate={setCurrentView} />}
-      {currentView === 'register' && <Register onNavigate={setCurrentView} />}
-      {currentView === 'inicio' && (<CitizenHome user={user}onNavigate={setCurrentView}/>)}
-      {currentView === 'citizen' && <CitizenDashboard user={user} onLogout={handleLogout} />}
-      {currentView === 'admin' && <AdminDashboard user={user} onLogout={handleLogout} />}
+      {currentView === 'welcome' && (
+        <Welcome onContinue={() => setCurrentView('login')} />
+      )}
+
+      {currentView === 'login' && (
+        <Login onLogin={handleLogin} onNavigate={setCurrentView} />
+      )}
+
+      {currentView === 'register' && (
+        <Register onNavigate={setCurrentView} />
+      )}
+
+      {currentView === 'inicio' && (
+        <CitizenHome user={user} onNavigate={setCurrentView} onLogout={handleLogout} />
+      )}
+
+      {currentView === 'citizen' && (
+        <CitizenDashboard user={user} onLogout={handleLogout} onNavigate={setCurrentView} />
+      )}
+
+      {currentView === 'admin' && (
+        <AdminDashboard user={user} onLogout={handleLogout} />
+      )}
     </div>
   );
 }
@@ -377,7 +404,7 @@ function Register({ onNavigate }) {
 // ============================================
 // CITIZEN DASHBOARD
 // ============================================
-function CitizenDashboard({ user, onLogout }) {
+function CitizenDashboard({ user, onLogout, onNavigate }) {
   const [showNewReport, setShowNewReport] = useState(false);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -461,12 +488,14 @@ function CitizenDashboard({ user, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-300">{user?.full_name}</span>
+              <span className="text-lg font-semibold mb-2">{user?.full_name}</span>
               <button
                 onClick={onLogout}
                 className="flex items-center gap-2 px-4 py-2 bg-red-300 hover:bg-red-300 text-red-800 rounded-lg transition-colors"
 
               >
+
+              
                 <LogOut className="text-lg font-semibold mb-2 w-4 h-4" />
                 Salir
               </button>
@@ -477,6 +506,13 @@ function CitizenDashboard({ user, onLogout }) {
 
       <div className="max-w-7xl mx-auto px-4 py-8 bg-[#F7F7F7] min-h-screen">
         <div className="flex justify-between items-center mb-8">
+          <button
+          onClick={() => onNavigate("inicio")}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-400 hover:bg-slate-300 text-slate-700 rounded-lg transition"
+          >
+            ← Volver
+          </button>
+         
           <div>
             <h2 className="text-lg font-semibold mb-2">Mis Reportes</h2>
             <p className="text-xl font-bold text-[#2F5130]">Gestiona y da seguimiento a tus reportes</p>
@@ -511,73 +547,79 @@ function CitizenDashboard({ user, onLogout }) {
               const StatusIcon = statusConfig.icon;
               
               return (
-                <div key={report.id} className="bg-white shadow-md rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`px-3 py-1 rounded-lg border flex items-center gap-2 ${statusConfig.color}`}>
-                      <StatusIcon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{statusConfig.label}</span>
-                    </div>
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${urgencyBadge.color}`}>
-                      {urgencyBadge.label}
-                    </div>
-                  </div>
+                <div
+  key={report.id}
+  className="bg-white shadow-md border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow"
+>
+  <div className="flex items-start justify-between mb-4">
+    <div className={`px-3 py-1 rounded-lg border flex items-center gap-2 ${statusConfig.color}`}>
+      <StatusIcon className="w-4 h-4" />
+      <span className="text-sm font-medium text-gray-700">{statusConfig.label}</span>
+    </div>
 
-                  <div className="mb-3">
-                    <span className="text-xs text-blue-300 font-mono">{report.tracking_code}</span>
-                  </div>
+    <div className={`px-2 py-1 rounded text-xs font-medium ${urgencyBadge.color} text-gray-700`}>
+      {urgencyBadge.label}
+    </div>
+  </div>
 
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{report.title}</h3>
-                  <p className="text-slate-300 text-sm mb-2 line-clamp-2">{report.description}</p>
-                  
-                  {report.category_name && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded">
-                        {report.category_name}
-                      </span>
-                    </div>
-                  )}
+  <div className="mb-3">
+    <span className="text-xs text-blue-700 font-mono">{report.tracking_code}</span>
+  </div>
 
-                  {report.location_address && (
-                    <p className="text-xs text-slate-400 mb-2 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {report.location_address}
-                    </p>
-                  )}
+  <h3 className="text-lg font-semibold text-gray-900 mb-2">{report.title}</h3>
 
-                  <div className="text-xs text-slate-400 mb-3">
-                    {new Date(report.created_at).toLocaleDateString('es-ES', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </div>
+  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{report.description}</p>
 
-                  {report.assigned_entity && (
-                    <div className="mb-3 p-2 bg-purple-500/10 rounded text-xs text-purple-300">
-                      <strong>Asignado a:</strong> {report.assigned_entity}
-                    </div>
-                  )}
+  {report.category_name && (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+        {report.category_name}
+      </span>
+    </div>
+  )}
 
-                  {report.admin_notes && (
-                    <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                      <p className="text-xs font-semibold text-blue-300 mb-1">Notas del Administrador:</p>
-                      <p className="text-xs text-slate-300">{report.admin_notes}</p>
-                    </div>
-                  )}
+  {report.location_address && (
+    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+      <MapPin className="w-3 h-3" />
+      {report.location_address}
+    </p>
+  )}
 
-                  {report.resolution_notes && report.status === 'resolved' && (
-                    <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/30">
-                      <p className="text-xs font-semibold text-green-300 mb-1">Solución:</p>
-                      <p className="text-xs text-slate-300">{report.resolution_notes}</p>
-                    </div>
-                  )}
+  <div className="text-xs text-gray-500 mb-3">
+    {new Date(report.created_at).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })}
+  </div>
 
-                  {report.status === 'resolved' && !report.citizen_rating && (
-                    <button className="mt-4 w-full py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 rounded-lg text-sm transition-colors">
-                      Calificar Servicio
-                    </button>
-                  )}
-                </div>
+  {report.assigned_entity && (
+    <div className="mb-3 p-2 bg-purple-100 rounded text-xs text-purple-700 border border-purple-200">
+      <strong>Asignado a:</strong> {report.assigned_entity}
+    </div>
+  )}
+
+  {report.admin_notes && (
+    <div className="mt-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
+      <p className="text-xs font-semibold text-blue-700 mb-1">Notas del Administrador:</p>
+      <p className="text-xs text-gray-700">{report.admin_notes}</p>
+    </div>
+  )}
+
+  {report.resolution_notes && report.status === 'resolved' && (
+    <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
+      <p className="text-xs font-semibold text-green-700 mb-1">Solución:</p>
+      <p className="text-xs text-gray-700">{report.resolution_notes}</p>
+    </div>
+  )}
+
+  {report.status === 'resolved' && !report.citizen_rating && (
+    <button className="mt-4 w-full py-2 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-lg text-sm transition-colors">
+      Calificar Servicio
+    </button>
+  )}
+</div>
+
               );
             })}
           </div>
@@ -744,42 +786,39 @@ function AdminDashboard({ user, onLogout }) {
   return (
     <>
       <nav className="bg-[#A8D5A2] border-b border-green-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-8 bg-[#F7F7F7] min-h-screen">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="w-8 h-8 text-blue-400" />
-              <div>
-                <h1 className="text-xl font-bold text-white">UrbanReport</h1>
-                <p className="text-xs text-slate-300">Panel Administrativo</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-slate-300">{user?.full_name}</p>
-                <p className="text-xs text-slate-400">{user?.entity_name || 'Admin'}</p>
-              </div>
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-700 rounded-lg transition-colors"
-
-              >
-                <LogOut className="text-lg font-semibold mb-2 w-4 h-4" />
-                Salir
-              </button>
-
-              
-
-
-              
-            </div>
-          </div>
+  <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="flex justify-between items-center h-16">
+      <div className="flex items-center gap-3">
+        <BarChart3 className="w-8 h-8 text-blue-600" />
+        <div>
+          <h1 className="text-xl font-bold text-[#2F5130]">UrbanReport</h1>
+          <p className="text-xl font-bold text-[#00000]">Panel Operativo</p>
         </div>
-      </nav>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className="text-sm text-[#2F5130]">{user?.full_name}</p>
+          <p className="text-xs text-[#2F5130]/70">{user?.entity_name || 'Admin'}</p>
+        </div>
+
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-red-200 hover:bg-red-300 text-red-800 rounded-lg transition"
+        >
+          <LogOut className="w-4 h-4" />
+          Salir
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
 
       <div className="max-w-7xl mx-auto px-4 py-8 bg-[#F7F7F7] min-h-screen">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Panel de Control</h2>
-          <p className="text-slate-300">Gestiona todos los reportes ciudadanos de Buenaventura</p>
+          <h2 className="text-xl font-bold text-[#2F5130] mb-2">Panel de Control</h2>
+          <p className="text-xl font-bold text-[#00000]">Gestiona todos los reportes ciudadanos de Buenaventura</p>
         </div>
 
         {loading ? (
@@ -787,87 +826,7 @@ function AdminDashboard({ user, onLogout }) {
         ) : (
           <>
             {/* STATS CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-lg rounded-xl border border-blue-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-blue-500/30 rounded-lg">
-                    <FileText className="w-6 h-6 text-blue-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.total}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Total Reportes</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 backdrop-blur-lg rounded-xl border border-yellow-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-yellow-500/30 rounded-lg">
-                    <AlertCircle className="w-6 h-6 text-yellow-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.received}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Nuevos</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-lg rounded-xl border border-purple-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-purple-500/30 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-purple-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.in_progress}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">En Progreso</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-lg rounded-xl border border-green-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-green-500/30 rounded-lg">
-                    <CheckCircle className="w-6 h-6 text-green-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.resolved}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Resueltos</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 backdrop-blur-lg rounded-xl border border-red-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-red-500/30 rounded-lg">
-                    <Zap className="w-6 h-6 text-red-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.critical_count}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Críticos</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 backdrop-blur-lg rounded-xl border border-orange-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-orange-500/30 rounded-lg">
-                    <Clock className="w-6 h-6 text-orange-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.in_review}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">En Revisión</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-pink-500/20 to-pink-600/20 backdrop-blur-lg rounded-xl border border-pink-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-pink-500/30 rounded-lg">
-                    <CheckCircle className="w-6 h-6 text-pink-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.avg_rating || 'N/A'}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Calificación Promedio</h3>
-              </div>
-
-              <div className="bg-gradient-to-br from-gray-500/20 to-gray-600/20 backdrop-blur-lg rounded-xl border border-gray-500/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-gray-500/30 rounded-lg">
-                    <XCircle className="w-6 h-6 text-gray-300" />
-                  </div>
-                  <span className="text-3xl font-bold text-white">{stats.rejected}</span>
-                </div>
-                <h3 className="text-slate-200 font-medium">Rechazados</h3>
-              </div>
-            </div>
+            
 
             {/* FILTROS Y TABLA */}
             <div className="bg-white shadow-md rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
@@ -925,91 +884,117 @@ function AdminDashboard({ user, onLogout }) {
               {/* TABLA DE REPORTES */}
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Código</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Fecha</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Categoría</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Ciudadano</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Ubicación</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Urgencia</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Estado</th>
-                      <th className="text-left py-3 px-4 text-slate-300 font-semibold">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredReports.length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="text-center py-12 text-slate-300">
-                          No se encontraron reportes con los filtros aplicados
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredReports.map((report) => {
-                        const statusConfig = getStatusConfig(report.status);
-                        const urgencyColors = {
-                          low: 'bg-slate-500/20 text-slate-300',
-                          medium: 'bg-yellow-500/20 text-yellow-300',
-                          high: 'bg-orange-500/20 text-orange-300',
-                          critical: 'bg-red-500/20 text-red-300'
-                        };
-                        
-                        return (
-                          <tr key={report.id} className="border-b border-slate-700/50 hover:bg-white/5 transition-colors">
-                            <td className="py-4 px-4">
-                              <span className="text-xs font-mono text-blue-300">{report.tracking_code}</span>
-                            </td>
-                            <td className="py-4 px-4 text-slate-300 text-sm">
-                              {new Date(report.created_at).toLocaleDateString('es-ES', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                year: 'numeric' 
-                              })}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className="text-white font-medium text-sm">{report.category_name}</span>
-                              <p className="text-xs text-slate-400 mt-1 line-clamp-1">{report.title}</p>
-                            </td>
-                            <td className="py-4 px-4">
-                              <div className="text-slate-300 text-sm">{report.citizen_name}</div>
-                              <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                                <Mail className="w-3 h-3" />
-                                <span className="truncate max-w-[120px]">{report.citizen_email}</span>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4">
-                              <div className="flex items-start gap-1 text-xs text-slate-400">
-                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                <span className="line-clamp-2 max-w-[150px]">{report.location_address}</span>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${urgencyColors[report.urgency_level]}`}>
-                                {report.urgency_level === 'low' ? 'Baja' : 
-                                 report.urgency_level === 'medium' ? 'Media' :
-                                 report.urgency_level === 'high' ? 'Alta' : 'Crítica'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig.color}`}>
-                                {statusConfig.label}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4">
-                              <button
-                                onClick={() => setSelectedReport(report)}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-colors text-sm"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                Gestionar
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+  <thead>
+    <tr className="border-b border-gray-300">
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Código</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Fecha</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Categoría</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Ciudadano</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Ubicación</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Urgencia</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Estado</th>
+      <th className="text-left py-3 px-4 text-gray-700 font-semibold">Acciones</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {filteredReports.length === 0 ? (
+      <tr>
+        <td colSpan="8" className="text-center py-12 text-gray-600">
+          No se encontraron reportes con los filtros aplicados
+        </td>
+      </tr>
+    ) : (
+      filteredReports.map((report) => {
+        const statusConfig = getStatusConfig(report.status);
+        const urgencyColors = {
+          low: 'bg-slate-200 text-slate-700',
+          medium: 'bg-yellow-200 text-yellow-800',
+          high: 'bg-orange-200 text-orange-800',
+          critical: 'bg-red-200 text-red-800',
+        };
+
+        return (
+          <tr
+            key={report.id}
+            className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <td className="py-4 px-4">
+              <span className="text-xs font-mono text-blue-700 font-semibold">
+                {report.tracking_code}
+              </span>
+            </td>
+
+            <td className="py-4 px-4 text-gray-700 text-sm">
+              {new Date(report.created_at).toLocaleDateString("es-ES")}
+            </td>
+
+            <td className="py-4 px-4">
+              <span className="text-gray-800 font-medium text-sm">
+                {report.category_name}
+              </span>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                {report.title}
+              </p>
+            </td>
+
+            <td className="py-4 px-4">
+              <div className="text-gray-800 text-sm font-medium">
+                {report.citizen_name}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                <Mail className="w-3 h-3" />
+                <span className="truncate max-w-[120px]">{report.citizen_email}</span>
+              </div>
+            </td>
+
+            <td className="py-4 px-4">
+              <div className="flex items-start gap-1 text-xs text-gray-500">
+                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span className="line-clamp-2 max-w-[150px]">
+                  {report.location_address}
+                </span>
+              </div>
+            </td>
+
+            <td className="py-4 px-4">
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium capitalize ${urgencyColors[report.urgency_level]}`}
+              >
+                {report.urgency_level === "low"
+                  ? "Baja"
+                  : report.urgency_level === "medium"
+                  ? "Media"
+                  : report.urgency_level === "high"
+                  ? "Alta"
+                  : "Crítica"}
+              </span>
+            </td>
+
+            <td className="py-4 px-4">
+              <span
+                className={`px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig.color}`}
+              >
+                {statusConfig.label}
+              </span>
+            </td>
+
+            <td className="py-4 px-4">
+              <button
+                onClick={() => setSelectedReport(report)}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Edit2 className="w-4 h-4" />
+                Gestionar
+              </button>
+            </td>
+          </tr>
+        );
+      })
+    )}
+  </tbody>
+</table>
+
               </div>
 
               {filteredReports.length > 0 && (
@@ -1254,7 +1239,7 @@ function EditReportModal({ report, user, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-5xl my-8">
+      <div className="bg-slate-600 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-5xl my-8">
         <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center rounded-t-2xl z-10">
           <div>
             <h2 className="text-2xl font-bold text-white">Gestionar Reporte</h2>

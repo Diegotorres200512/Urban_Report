@@ -1,17 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 
-// Configuración correcta del icono por defecto
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+// ÍCONO PARA TU UBICACIÓN
+const userIcon = new L.Icon({
+  iconUrl:
+    "https://cdn4.iconfinder.com/data/icons/small-n-flat/24/map-marker-512.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
 export default function MapSelector({ onSelect, onClose }) {
   const [position, setPosition] = useState(null);
+  const [initialCenter, setInitialCenter] = useState([3.8939, -77.0723]); // Buenaventura
+  const [mapReady, setMapReady] = useState(false);
+
+  const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = [pos.coords.latitude, pos.coords.longitude];
+          setInitialCenter(coords);
+          setUserLocation(coords);
+          setMapReady(true);
+        },
+        () => {
+          setMapReady(true);
+        }
+      );
+    } else {
+      setMapReady(true);
+    }
+  }, []);
 
   function LocationPicker() {
     useMapEvents({
@@ -38,6 +67,16 @@ export default function MapSelector({ onSelect, onClose }) {
     onSelect({ lat, lon, address });
   };
 
+  if (!mapReady) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999] p-4">
+        <div className="bg-white p-6 rounded-xl shadow-xl">
+          <p className="text-gray-700">Obteniendo ubicación...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999] p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-4 border border-gray-200">
@@ -47,13 +86,14 @@ export default function MapSelector({ onSelect, onClose }) {
         </h3>
 
         <div className="h-[400px] rounded-lg overflow-hidden">
-          <MapContainer
-            center={[4.65, -74.1]}
-            zoom={14}
-            className="h-full w-full"
-            style={{ height: "100%", width: "100%" }}
-          >
+          <MapContainer center={initialCenter} zoom={15} className="h-full w-full">
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+            {/* MARCADOR DE TU UBICACIÓN */}
+            {userLocation && (
+              <Marker position={userLocation} icon={userIcon} />
+            )}
+
             <LocationPicker />
           </MapContainer>
         </div>
