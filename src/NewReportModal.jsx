@@ -228,12 +228,18 @@ export default function NewReportModal({ user, onClose, onSuccess }) {
 
               <div className="flex gap-3">
                 <input
-                  type="text"
-                  value={formData.location_address}
-                  onChange={(e) => setFormData({ ...formData, location_address: e.target.value })}
-                  className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900"
-                  required
-                />
+  type="text"
+  value={formData.location_address}
+  onChange={(e) =>
+    setFormData({
+      ...formData,
+      location_address: e.target.value,
+    })
+  }
+  className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg"
+  required
+/>
+
 
                 <button
                   type="button"
@@ -323,11 +329,13 @@ export default function NewReportModal({ user, onClose, onSuccess }) {
 
       {/* Mapa */}
       {isMapOpen && (
-        <MapSelector
-          onClose={() => setIsMapOpen(false)}
-          onSelect={handleLocationSelected}
-        />
-      )}
+  <MapSelector
+    onClose={() => setIsMapOpen(false)}
+    onSelect={handleLocationSelected}
+    searchAddress={formData.location_address}
+  />
+)}
+
     </>
   );
 }
