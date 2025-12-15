@@ -5,6 +5,9 @@ import Welcome from "./Welcome";
 import { FileText, LogOut, Plus, Clock, CheckCircle, XCircle, AlertCircle, BarChart3, Edit2, Mail, Phone, MapPin, User, Lock, UserPlus, Search, X, Save, Upload, Image as ImageIcon, Zap, TrendingUp } from 'lucide-react';
 import { supabase, getCategories, uploadFile } from './lib/supabase.js';
 import logo from "./assets/logo.jpg";
+import ChooseRegister from "./ChooseRegister";
+import Register from "./Register";
+import RegisterEntity from "./RegisterEntity";
 // ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
@@ -67,9 +70,18 @@ export default function App() {
         <Login onLogin={handleLogin} onNavigate={setCurrentView} />
       )}
 
-      {currentView === 'register' && (
+      {currentView === 'choose-register' && (
+        <ChooseRegister onNavigate={setCurrentView} />
+      )}
+
+      {currentView === "Register" && (
         <Register onNavigate={setCurrentView} />
       )}
+     
+      {currentView === "RegisteEntity" && (
+        <RegisterEntity onNavigate={setCurrentView} />
+      )}
+      
 
       {currentView === 'inicio' && (
         <CitizenHome user={user} onNavigate={setCurrentView} onLogout={handleLogout} />
@@ -123,6 +135,15 @@ function Login({ onLogin, onNavigate }) {
       setLoading(false);
       return;
     }
+
+    const userData = data[0];
+
+    if (userData.role === "entity" && userData.status !== "approved") {
+      setError("Tu cuenta está pendiente de aprobación por un administrador");
+      setLoading(false);
+      return;
+    }
+
 
     console.log('✅ Login exitoso:', data[0]);
     onLogin(data[0]);
@@ -201,9 +222,13 @@ function Login({ onLogin, onNavigate }) {
           <div className="mt-6 text-center">
             <p className="text-lg font-semibold mb-2">
               ¿No tienes cuenta?{' '}
-              <button onClick={() => onNavigate('register')} className="text-blue-400 hover:text-blue-300 font-semibold">
-                Regístrate
-              </button>
+              <button
+  onClick={() => onNavigate('choose-register')}
+  className="text-blue-400 hover:text-blue-300 font-semibold"
+>
+  Regístrate
+</button>
+
             </p>
           </div>
         </div>
@@ -215,189 +240,7 @@ function Login({ onLogin, onNavigate }) {
 // ============================================
 // REGISTER
 // ============================================
-function Register({ onNavigate }) {
-  const [formData, setFormData] = useState({ 
-    email: '', 
-    password: '', 
-    confirmPassword: '', 
-    full_name: '', 
-    phone: '' 
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert([{
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.full_name,
-          phone: formData.phone,
-          role: 'citizen'
-        }]);
-
-      if (insertError) {
-        if (insertError.code === '23505') {
-          setError('Este correo ya está registrado');
-        } else {
-          setError('Error al crear la cuenta');
-        }
-        setLoading(false);
-        return;
-      }
-
-      setSuccess(true);
-      setTimeout(() => onNavigate('login'), 2000);
-    } catch (err) {
-      setError('Error al registrar usuario');
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-100 to-blue-300">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-md rounded-xl border border-gray-200 p-6 hover:shadow-lg transition">
-
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4">
-              <img src={logo} alt="Logo" className="w-20 h-20 object-contain" />
-            </div>
-            <h1 className="text-xl font-bold text-[#2F5130]">Crear cuenta</h1>
-            <p className="text-slate-300">Regístrate para reportar problemas</p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-2 text-red-200">
-              <AlertCircle className="w-5 h-5" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg flex items-center gap-2 text-green-200">
-              <CheckCircle className="w-5 h-5" />
-              <span className="text-sm">Cuenta creada exitosamente. Redirigiendo...</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-lg font-semibold mb-2">Nombre Completo</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-200 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Juan Pérez"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-lg font-semibold mb-2">Correo Electrónico</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-200 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="tu@correo.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-lg font-semibold mb-2">Teléfono</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-200 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="3001234567"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-lg font-semibold mb-2">Contraseña</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-200 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-lg font-semibold mb-2">Confirmar Contraseña</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-200 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors shadow-lg"
-            >
-              {loading ? 'Registrando...' : 'Crear Cuenta'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-lg font-semibold mb-1">
-              ¿Ya tienes cuenta?{' '}
-              <button onClick={() => onNavigate('login')} className="text-blue-400 hover:text-blue-300 font-semibold">
-                Iniciar Sesión
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Continuará con CitizenDashboard y AdminDashboard en el siguiente mensaje...
 
@@ -414,39 +257,36 @@ function CitizenDashboard({ user, onLogout, onNavigate }) {
   }, [user]);
 
   const loadReports = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('reports')
-      .select(`
-        *,
-        categories (
-          name,
-          icon,
-          color,
-          responsible_entity
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
 
-    if (error) throw error;
     
-    // Transformar los datos
-    const transformedData = (data || []).map(report => ({
-      ...report,
-      category_name: report.categories?.name,
-      category_icon: report.categories?.icon,
-      category_color: report.categories?.color,
-      responsible_entity: report.categories?.responsible_entity
-    }));
-    
-    setReports(transformedData);
-  } catch (error) {
-    console.error('Error cargando reportes:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const { data, error } = await supabase
+        .from("reports")
+        .select(`
+          *,
+          categories ( id, name, icon, color, responsible_entity ),
+          users!reports_assigned_user_id_fkey ( full_name, entity_name )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const transformed = data.map(r => ({
+        ...r,
+        category_name: r.categories?.name,
+        category_color: r.categories?.color,
+        assigned_user_name: r.users?.full_name,
+        assigned_entity_name: r.users?.entity_name
+      }));
+
+      setReports(transformed);
+      setFilteredReports(transformed);
+    } catch (err) {
+      console.error("Error cargando reportes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -643,12 +483,18 @@ function AdminDashboard({ user, onLogout }) {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [entities, setEntities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterUrgency, setFilterUrgency] = useState('all');
+  const [loadingEntities, setLoadingEntities] = useState(true);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterUrgency, setFilterUrgency] = useState("all");
+
   const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+
   const [stats, setStats] = useState({
     total: 0,
     received: 0,
@@ -660,14 +506,41 @@ function AdminDashboard({ user, onLogout }) {
     avg_rating: 0,
     critical_count: 0
   });
+  
+
+  
 
   useEffect(() => {
     loadData();
+    loadEntities();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [reports, searchTerm, filterStatus, filterCategory, filterUrgency]);
+
+
+const getCategories = async () => {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name")
+    .order("name");
+
+  if (error) {
+    console.error("Error cargando categorías:", error);
+    return [];
+  }
+
+  return data;
+};
+
+
+
+
+
+
+
+
+
+
+
 
   const loadData = async () => {
   try {
@@ -706,6 +579,7 @@ function AdminDashboard({ user, onLogout }) {
     const categoriesData = await getCategories();
     
     setReports(transformedReports);
+    setFilteredReports(transformedReports);
     setCategories(categoriesData);
     calculateStats(transformedReports);
   } catch (error) {
@@ -714,6 +588,52 @@ function AdminDashboard({ user, onLogout }) {
     setLoading(false);
   }
 };
+
+
+const updateEntityStatus = async (entityId, status) => {
+  try {
+    const { error } = await supabase
+      .from("users")
+      .update({ status })
+      .eq("id", entityId);
+
+    if (error) throw error;
+
+    loadEntities();
+  } catch (error) {
+    console.error("Error actualizando entidad:", error);
+    alert("No se pudo actualizar la entidad");
+  }
+};
+
+
+const loadEntities = async () => {
+    setLoadingEntities(true);
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select(`
+          id,
+          full_name,
+          email,
+          entity_name,
+          status,
+          created_at,
+          rut_path,
+          chamber_path
+        `)
+        .eq("role", "entity")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setEntities(data || []);
+    } catch (err) {
+      console.error("Error cargando entidades:", err);
+    } finally {
+      setLoadingEntities(false);
+    }
+  };
+
 
   const calculateStats = (reportsData) => {
     const newStats = {
@@ -739,36 +659,37 @@ function AdminDashboard({ user, onLogout }) {
   };
 
   const applyFilters = () => {
-    let filtered = [...reports];
+  let filtered = [...reports];
 
-    // Filtro de búsqueda
-    if (searchTerm) {
-      filtered = filtered.filter(r =>
-        r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.citizen_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.location_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+  if (searchTerm) {
+    filtered = filtered.filter(r =>
+      r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.citizen_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.location_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
 
-    // Filtro de estado
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(r => r.status === filterStatus);
-    }
+  if (filterStatus !== 'all') {
+    filtered = filtered.filter(r => r.status === filterStatus);
+  }
 
-    // Filtro de categoría
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(r => r.category_id === filterCategory);
-    }
+  if (filterCategory !== 'all') {
+    filtered = filtered.filter(r => r.category_id === filterCategory);
+  }
 
-    // Filtro de urgencia
-    if (filterUrgency !== 'all') {
-      filtered = filtered.filter(r => r.urgency_level === filterUrgency);
-    }
+  if (filterUrgency !== 'all') {
+    filtered = filtered.filter(r => r.urgency_level === filterUrgency);
+  }
 
-    setFilteredReports(filtered);
-  };
+  setFilteredReports(filtered);
+};
+useEffect(() => {
+  applyFilters();
+}, [reports, searchTerm, filterStatus, filterCategory, filterUrgency]);
+
+
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -826,6 +747,86 @@ function AdminDashboard({ user, onLogout }) {
         ) : (
           <>
             {/* STATS CARDS */}
+
+            {/* ENTIDADES PENDIENTES */}
+<div className="bg-white shadow-md rounded-xl border border-gray-200 p-6 mb-8">
+  <h3 className="text-lg font-bold text-[#2F5130] mb-4">
+    Gestión de Entidades
+  </h3>
+
+  {loadingEntities ? (
+    <p className="text-gray-600">Cargando entidades...</p>
+  ) : entities.length === 0 ? (
+    <p className="text-gray-600">No hay entidades registradas</p>
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-gray-300">
+            <th className="text-left py-2 px-3">Entidad</th>
+            <th className="text-left py-2 px-3">Email</th>
+            <th className="text-left py-2 px-3">Fecha</th>
+            <th className="text-left py-2 px-3">Estado</th>
+            <th className="text-left py-2 px-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entities.map(entity => (
+            <tr key={entity.id} className="border-b">
+              <td className="py-2 px-3 font-medium">
+                {entity.entity_name}
+              </td>
+              <td className="py-2 px-3 text-sm text-gray-600">
+                {entity.email}
+              </td>
+              <td className="py-2 px-3 text-sm">
+                {new Date(entity.created_at).toLocaleDateString("es-ES")}
+              </td>
+              <td className="py-2 px-3">
+                <span className={`px-2 py-1 rounded text-xs font-medium
+                  ${entity.status === "approved"
+                    ? "bg-green-200 text-green-800"
+                    : entity.status === "rejected"
+                    ? "bg-red-200 text-red-800"
+                    : "bg-yellow-200 text-yellow-800"}
+                `}>
+                  {entity.status}
+                </span>
+              </td>
+              <td className="py-2 px-3 flex gap-2">
+                <button
+                  onClick={() => setSelectedEntity(entity)}
+                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded"
+                >
+                  Revisar
+                </button>
+
+                {entity.status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => updateEntityStatus(entity.id, "approved")}
+                      className="px-3 py-1 bg-green-200 text-green-800 rounded"
+                    >
+                      Aprobar
+                    </button>
+
+                    <button
+                      onClick={() => updateEntityStatus(entity.id, "rejected")}
+                      className="px-3 py-1 bg-red-200 text-red-800 rounded"
+                    >
+                      Rechazar
+                    </button>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
+
             
 
             {/* FILTROS Y TABLA */}
