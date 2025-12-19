@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Info, AlertTriangle, XCircle } from 'lucide-react';
 import { notificationService } from "./services/notificationService";
 
-export default function NotificationHeader({ userId }) {
+export default function NotificationHeader({ userId, onViewHistory }) {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -110,6 +110,16 @@ export default function NotificationHeader({ userId }) {
                             ))
                         )}
                     </div>
+                    {onViewHistory && (
+                        <div className="p-2 border-t border-gray-100 bg-gray-50 text-center">
+                            <button
+                                onClick={() => { setIsOpen(false); onViewHistory(); }}
+                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Ver historial completo
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

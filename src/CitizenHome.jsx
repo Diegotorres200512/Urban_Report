@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import logo from "./assets/logo.jpg";
-import { MapPin, FileText, Star, Heart } from "lucide-react";
+import { MapPin, FileText, Star, Heart, User } from "lucide-react";
 import NewReportModal from "./NewReportModal";
 import RateAppModal from "./RateAppModal";
 import NotificationHeader from "./NotificationHeader"; // Import
@@ -47,8 +47,13 @@ export default function CitizenHome({ user, onNavigate, onLogout }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <NotificationHeader userId={user?.id} />
-            <span className="text-xl font-bold text-[#00000]">{user?.full_name}</span>
+            <NotificationHeader userId={user?.id} onViewHistory={() => onNavigate('notifications')} />
+            <div className="flex flex-col items-end cursor-pointer group" onClick={() => onNavigate('profile')}>
+              <span className="text-xl font-bold text-[#00000] group-hover:text-green-700 transition-colors">{user?.full_name}</span>
+              <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                <User size={12} /> Mi Perfil
+              </span>
+            </div>
 
             {/* Botón para calificar la app en el navbar */}
             <button

@@ -36,15 +36,30 @@ export const notificationService = {
    * Crear una nueva notificación
    * @param {string} userId
    * @param {string} message
-   * @param {string} type - 'info', 'success', 'warning', 'error'
+   * @param {object} extraData - { report_id, report_code, entity_name, old_status, new_status, address }
    */
-  async createNotification(userId, message, type = 'info') {
+  async createNotification(userId, message, type = 'info', extraData = {}) {
+    const {
+      report_id,
+      report_code,
+      entity_name,
+      old_status,
+      new_status,
+      address
+    } = extraData;
+
     const { error } = await supabase
       .from('notifications')
       .insert({
         user_id: userId,
         message,
-        type
+        type,
+        report_id,
+        report_code,
+        entity_name,
+        old_status,
+        new_status,
+        address
       });
 
     if (error) console.error('Error creating notification:', error);

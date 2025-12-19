@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, uploadFile } from './lib/supabase.js';
+import { notificationService } from './services/notificationService';
 import { X, AlertCircle, CheckCircle, Upload, Image as ImageIcon, Save } from 'lucide-react';
 
 export default function EditReportModal({ report, user, onClose, onSuccess }) {
@@ -151,6 +152,27 @@ export default function EditReportModal({ report, user, onClose, onSuccess }) {
                         new_value: formData.status,
                         comment: formData.admin_notes
                     }]);
+
+                // ENVIAR NOTIFICACIÓN AL CIUDADANO
+                // report.user_id es el creador del reporte
+                if (report.user_id) {
+                    const statusLabel = getStatusLabel(formData.status);
+                    const message = `Tu reporte #${report.tracking_code} ha cambiado a estado: ${statusLabel}`;
+
+                    await notificationService.createNotification(
+                        report.user_id,
+                        message,
+                        'info',
+                        {
+                            report_id: report.id,
+                            report_code: report.tracking_code,
+                            entity_name: user.role === 'entity' ? user.name : 'Administrador', // O assigned_entity
+                            old_status: oldStatus,
+                            new_status: formData.status,
+                            address: report.location_address
+                        }
+                    );
+                }
             }
 
             // Subir archivos de evidencia si existen

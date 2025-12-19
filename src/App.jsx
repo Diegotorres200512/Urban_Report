@@ -14,6 +14,8 @@ import NotificationHeader from "./NotificationHeader";
 import { notificationService } from "./services/notificationService";
 import EntityDashboard from "./EntityDashboard";
 import EditReportModal from "./EditReportModal";
+import UserProfile from "./UserProfile";
+import NotificationsPage from "./NotificationsPage";
 
 // ============================================
 // COMPONENTE PRINCIPAL
@@ -122,6 +124,14 @@ export default function App() {
 
       {currentView === 'entity' && (
         <EntityDashboard user={user} onLogout={handleLogout} />
+      )}
+
+      {currentView === 'profile' && (
+        <UserProfile user={user} onNavigate={setCurrentView} />
+      )}
+
+      {currentView === 'notifications' && (
+        <NotificationsPage user={user} onNavigate={setCurrentView} />
       )}
     </div>
   );
