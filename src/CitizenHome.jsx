@@ -33,32 +33,55 @@ export default function CitizenHome({ user, onNavigate, onLogout }) {
 
       <div className="min-h-screen bg-gray-100 p-6">
         {/* Barra superior */}
-        <nav className="bg-green-200 p-4 rounded-xl flex items-center justify-between mb-8 shadow">
-          <div className="flex items-center gap-3">
-            <img src={logo} className="w-12 h-12 rounded-full" alt="Logo" />
+        {/* Barra superior */}
+        <nav className="bg-green-200 p-4 rounded-xl flex items-center justify-between mb-8 shadow relative">
+
+          {/* IZQUIERDA: Mi Perfil (Grande y con Foto) */}
+          <div
+            className="flex items-center gap-4 cursor-pointer hover:bg-white/20 p-2 rounded-lg transition-colors group"
+            onClick={() => onNavigate('profile')}
+          >
+            <div className="relative">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-green-600 shadow-sm"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-600 shadow-sm">
+                  <User size={32} className="text-green-700" />
+                </div>
+              )}
+            </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-700">
-                Bienvenido a UrbanReport
-              </h1>
-              <p className="text-sm text-gray-600">
-                Un sistema de quejas y reclamos
-              </p>
+              <span className="block text-2xl font-bold text-gray-800 group-hover:text-green-800 transition-colors">
+                {user?.full_name}
+              </span>
+              <span className="text-sm font-semibold text-green-700 flex items-center gap-1">
+                <User size={14} /> Mi Perfil
+              </span>
             </div>
           </div>
 
+          {/* CENTRO: Bienvenida (Absoluto para centrar perfecto o flex grow) */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center hidden md:block">
+            <div className="flex flex-col items-center">
+              <img src={logo} className="w-10 h-10 rounded-full mb-1" alt="Logo" />
+              <h1 className="text-xl font-bold text-gray-700 bg-white/50 px-4 py-1 rounded-full backdrop-blur-sm">
+                Bienvenido a UrbanReport
+              </h1>
+            </div>
+          </div>
+
+          {/* DERECHA: Acciones y Notificaciones */}
           <div className="flex items-center gap-4">
             <NotificationHeader userId={user?.id} onViewHistory={() => onNavigate('notifications')} />
-            <div className="flex flex-col items-end cursor-pointer group" onClick={() => onNavigate('profile')}>
-              <span className="text-xl font-bold text-[#00000] group-hover:text-green-700 transition-colors">{user?.full_name}</span>
-              <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                <User size={12} /> Mi Perfil
-              </span>
-            </div>
 
             {/* Botón para calificar la app en el navbar */}
             <button
               onClick={() => setShowRateApp(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition text-sm font-semibold"
+              className="flex items-center gap-2 px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg transition text-sm font-semibold border border-yellow-200 shadow-sm"
             >
               <Heart size={16} className="fill-yellow-500 text-yellow-500" />
               Calificar App
@@ -69,9 +92,9 @@ export default function CitizenHome({ user, onNavigate, onLogout }) {
                 onLogout();
                 onNavigate("welcome");
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg transition"
+              className="flex items-center gap-2 px-4 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg transition shadow-sm border border-red-300 font-medium"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </nav>

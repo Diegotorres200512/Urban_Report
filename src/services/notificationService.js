@@ -45,12 +45,17 @@ export const notificationService = {
       entity_name = null,
       old_status = null,
       new_status = null,
-      address = null
+      address = null,
+      title = 'Actualización de Reporte' // Default title
     } = extraData || {};
+
+    console.log('🔔 [Service] Creating notification for:', userId, 'Message:', message);
+    console.log('🔔 [Service] Extra Data:', extraData);
 
     const { error } = await supabase
       .from('notifications')
       .insert({
+        title, // Insert title
         user_id: userId,
         message,
         type,
@@ -62,7 +67,11 @@ export const notificationService = {
         address
       });
 
-    if (error) console.error('Error creating notification:', error);
+    if (error) {
+      console.error('❌ [Service] Error creating notification:', error);
+    } else {
+      console.log('✅ [Service] Notification inserted successfully');
+    }
   },
 
   /**

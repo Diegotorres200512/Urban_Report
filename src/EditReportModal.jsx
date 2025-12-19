@@ -155,8 +155,10 @@ export default function EditReportModal({ report, user, onClose, onSuccess }) {
 
                 // ENVIAR NOTIFICACIÓN AL CIUDADANO
                 // report.user_id es el creador del reporte
+                console.log('🔔 Intentando enviar notificación. Report User ID:', report.user_id);
                 if (report.user_id) {
                     try {
+                        console.log('🔔 Preparando payload...');
                         const statusLabel = getStatusLabel(formData.status);
                         const message = `Tu reporte #${report.tracking_code} ha cambiado a estado: ${statusLabel}`;
 
@@ -176,6 +178,7 @@ export default function EditReportModal({ report, user, onClose, onSuccess }) {
                                 address: report.location_address || ''
                             }
                         );
+                        console.log('✅ Notificación enviada (o intento realizado)');
                     } catch (notifErr) {
                         console.error('⚠️ Error al enviar notificación (no bloqueante):', notifErr);
                         // No lanzamos error para permitir que el reporte se guarde
