@@ -85,7 +85,7 @@ export default function EditReportModal({ report, user, onClose, onSuccess }) {
                 .insert([{
                     report_id: report.id,
                     user_id: user.id,
-                    user_name: user.full_name,
+                    user_name: user.full_name || user.name || 'Usuario',
                     comment: newComment,
                     is_internal: false,
                     is_public: true
