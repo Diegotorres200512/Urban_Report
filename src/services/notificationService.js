@@ -40,13 +40,13 @@ export const notificationService = {
    */
   async createNotification(userId, message, type = 'info', extraData = {}) {
     const {
-      report_id,
-      report_code,
-      entity_name,
-      old_status,
-      new_status,
-      address
-    } = extraData;
+      report_id = null,
+      report_code = null,
+      entity_name = null,
+      old_status = null,
+      new_status = null,
+      address = null
+    } = extraData || {};
 
     const { error } = await supabase
       .from('notifications')

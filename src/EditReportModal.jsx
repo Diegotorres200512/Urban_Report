@@ -156,22 +156,30 @@ export default function EditReportModal({ report, user, onClose, onSuccess }) {
                 // ENVIAR NOTIFICACIÓN AL CIUDADANO
                 // report.user_id es el creador del reporte
                 if (report.user_id) {
-                    const statusLabel = getStatusLabel(formData.status);
-                    const message = `Tu reporte #${report.tracking_code} ha cambiado a estado: ${statusLabel}`;
+                    try {
+                        const statusLabel = getStatusLabel(formData.status);
+                        const message = `Tu reporte #${report.tracking_code} ha cambiado a estado: ${statusLabel}`;
 
-                    await notificationService.createNotification(
-                        report.user_id,
-                        message,
-                        'info',
-                        {
-                            report_id: report.id,
-                            report_code: report.tracking_code,
-                            entity_name: user.role === 'entity' ? user.name : 'Administrador', // O assigned_entity
-                            old_status: oldStatus,
-                            new_status: formData.status,
-                            address: report.location_address
-                        }
-                    );
+                        // Fallback seguro para el nombre: name, full_name, o 'Entidad'
+                        const reporterName = user.name || user.full_name || 'Entidad';
+
+                        await notificationService.createNotification(
+                            report.user_id,
+                            message,
+                            'info',
+                            {
+                                report_id: report.id,
+                                report_code: report.tracking_code || '---',
+                                entity_name: user.role === 'entity' ? reporterName : 'Administrador',
+                                old_status: oldStatus,
+                                new_status: formData.status,
+                                address: report.location_address || ''
+                            }
+                        );
+                    } catch (notifErr) {
+                        console.error('⚠️ Error al enviar notificación (no bloqueante):', notifErr);
+                        // No lanzamos error para permitir que el reporte se guarde
+                    }
                 }
             }
 
