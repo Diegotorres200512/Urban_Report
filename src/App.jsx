@@ -8,6 +8,8 @@ import logo from "./assets/logo.jpg";
 import ChooseRegister from "./ChooseRegister";
 import Register from "./Register";
 import RegisterEntity from "./RegisterEntity";
+import RateService from "./RateService";
+import AdminRegister from "./AdminRegister";
 // ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
@@ -15,7 +17,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState('welcome');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [page, setPage] = useState("citizen");
+  const [filteredReports, setFilteredReports] = useState([]);
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     
@@ -78,10 +81,13 @@ export default function App() {
         <Register onNavigate={setCurrentView} />
       )}
      
-      {currentView === "RegisteEntity" && (
+      {currentView === "RegisterEntity" && (
         <RegisterEntity onNavigate={setCurrentView} />
       )}
       
+      {currentView === "RegisterAdmin" && (
+        <AdminRegister onNavigate={setCurrentView} />
+      )}
 
       {currentView === 'inicio' && (
         <CitizenHome user={user} onNavigate={setCurrentView} onLogout={handleLogout} />
@@ -90,6 +96,16 @@ export default function App() {
       {currentView === 'citizen' && (
         <CitizenDashboard user={user} onLogout={handleLogout} onNavigate={setCurrentView} />
       )}
+
+
+      {currentView === "Rate" && (
+        <RateService user={user} onNavigate={setCurrentView} />
+     )}
+
+     
+
+
+      
 
       {currentView === 'admin' && (
         <AdminDashboard user={user} onLogout={handleLogout} />
@@ -101,7 +117,7 @@ export default function App() {
 // ============================================
 // LOGIN
 // ============================================
-function Login({ onLogin, onNavigate }) {
+  function Login({ onLogin, onNavigate }) {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -236,7 +252,6 @@ function Login({ onLogin, onNavigate }) {
     </div>
   );
 }
-
 // ============================================
 // REGISTER
 // ============================================
@@ -251,7 +266,7 @@ function CitizenDashboard({ user, onLogout, onNavigate }) {
   const [showNewReport, setShowNewReport] = useState(false);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-
+   const [filteredReports, setFilteredReports] = useState([]);
   useEffect(() => {
     loadReports();
   }, [user]);
@@ -454,10 +469,23 @@ function CitizenDashboard({ user, onLogout, onNavigate }) {
   )}
 
   {report.status === 'resolved' && !report.citizen_rating && (
-    <button className="mt-4 w-full py-2 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-lg text-sm transition-colors">
+    <button
+    onClick={() => onNavigate("Rate")}
+    
+    className="mt-4 w-full py-2 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-lg text-sm transition-colors"
+    >
       Calificar Servicio
     </button>
   )}
+
+  {report.citizen_rating && (
+  <div className="mt-3">
+    ⭐ {report.citizen_rating}/5
+    <p className="text-sm text-gray-600">
+      {report.citizen_comment}
+    </p>
+  </div>
+)}
 </div>
 
               );
@@ -486,7 +514,7 @@ function AdminDashboard({ user, onLogout }) {
   const [entities, setEntities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingEntities, setLoadingEntities] = useState(true);
-
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -494,6 +522,29 @@ function AdminDashboard({ user, onLogout }) {
 
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const [appRatings, setAppRatings] = useState([]); 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
   const [stats, setStats] = useState({
     total: 0,

@@ -20,81 +20,87 @@ export default function RegisterEntity({ onNavigate }) {
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
+  try {
+    /* Validaciones */
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      setLoading(false);
-      return;
+      throw new Error("Las contraseñas no coinciden");
     }
 
     if (formData.password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
-      setLoading(false);
-      return;
+      throw new Error("La contraseña debe tener al menos 6 caracteres");
     }
 
     if (!rutFile || !chamberFile) {
-      setError("Debes adjuntar el RUT y la Cámara de Comercio");
-      setLoading(false);
-      return;
+      throw new Error("Debes adjuntar el RUT y la Cámara de Comercio");
     }
 
-    try {
-      /* 1️⃣ Subir archivos */
-      const timestamp = Date.now();
-
-      const rutPath = `rut/${formData.email}_${timestamp}_${rutFile.name}`;
-      const chamberPath = `chamber/${formData.email}_${timestamp}_${chamberFile.name}`;
-
-      const { error: rutError } = await supabase.storage
-        .from("entity-documents")
-        .upload(rutPath, rutFile);
-
-      if (rutError) throw rutError;
-
-      const { error: chamberError } = await supabase.storage
-        .from("entity-documents")
-        .upload(chamberPath, chamberFile);
-
-      if (chamberError) throw chamberError;
-
-      /* 2️⃣ Crear usuario */
-      const { error: insertError } = await supabase
-        .from("users")
-        .insert([
-          {
-            email: formData.email,
-            password: formData.password,
-            full_name: formData.full_name,
-            phone: formData.phone,
+    /* 1️⃣ Crear usuario en Supabase Auth */
+    const { data: signUpData, error: signUpError } =
+      await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
             role: "entity",
-            rut_path: rutPath,
-            chamber_path: chamberPath,
+            full_name: formData.full_name,
           },
-        ]);
+        },
+      });
 
-      if (insertError) {
-        if (insertError.code === "23505") {
-          setError("Este correo ya está registrado");
-        } else {
-          setError("Error al crear la cuenta");
-        }
-        setLoading(false);
-        return;
-      }
+    if (signUpError) throw signUpError;
 
-      setSuccess(true);
-      setTimeout(() => onNavigate("login"), 2500);
-    } catch (err) {
-      console.error(err);
-      setError("Error al registrar la entidad");
-    } finally {
-      setLoading(false);
+    const user = signUpData.user;
+    if (!user) {
+      throw new Error("No se pudo crear el usuario");
     }
-  };
+
+    /* 2️⃣ Subir archivos */
+    const timestamp = Date.now();
+
+    const rutPath = `${user.id}/rut_${timestamp}.pdf`;
+    const chamberPath = `${user.id}/chamber_${timestamp}.pdf`;
+
+    const { error: rutError } = await supabase.storage
+      .from("entity-documents")
+      .upload(rutPath, rutFile);
+
+    if (rutError) throw rutError;
+
+    const { error: chamberError } = await supabase.storage
+      .from("entity-documents")
+      .upload(chamberPath, chamberFile);
+
+    if (chamberError) throw chamberError;
+
+    /* 3️⃣ Guardar datos adicionales */
+    const { error: insertError } = await supabase
+      .from("users") // o "entities" (recomendado)
+      .insert({
+        id: user.id, // 🔑 importante
+        email: formData.email,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        role: "entity",
+        rut_path: rutPath,
+        chamber_path: chamberPath,
+      });
+
+    if (insertError) throw insertError;
+
+    setSuccess(true);
+    setTimeout(() => onNavigate("login"), 2500);
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Error al registrar la entidad");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-100 to-blue-300">
