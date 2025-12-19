@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, CheckCircle, User, Mail, Phone, Lock, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, User, Mail, Phone, Lock, Upload, FileText } from "lucide-react";
 import { supabase, getCategories, uploadFile } from './lib/supabase.js';
 import logo from "./assets/logo.jpg";
 
@@ -10,6 +10,7 @@ export default function RegisterEntity({ onNavigate }) {
     confirmPassword: "",
     full_name: "",
     phone: "",
+    nit: "", // Nuevo campo
   });
 
   const [rutFile, setRutFile] = useState(null);
@@ -19,87 +20,90 @@ export default function RegisterEntity({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  /* =========================
+     HANDLE SUBMIT
+  ========================= */
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    /* Validaciones */
-    if (formData.password !== formData.confirmPassword) {
-      throw new Error("Las contraseñas no coinciden");
-    }
+    try {
+      /* Validaciones */
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error("Las contraseñas no coinciden");
+      }
+      if (formData.password.length < 6) {
+        throw new Error("La contraseña debe tener al menos 6 caracteres");
+      }
+      if (!rutFile || !chamberFile) {
+        throw new Error("Debes adjuntar el RUT y la Cámara de Comercio");
+      }
 
-    if (formData.password.length < 6) {
-      throw new Error("La contraseña debe tener al menos 6 caracteres");
-    }
-
-    if (!rutFile || !chamberFile) {
-      throw new Error("Debes adjuntar el RUT y la Cámara de Comercio");
-    }
-
-    /* 1️⃣ Crear usuario en Supabase Auth */
-    const { data: signUpData, error: signUpError } =
-      await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: "entity",
-            full_name: formData.full_name,
+      /* 1️⃣ Crear usuario en Supabase Auth */
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              role: "entity",
+              full_name: formData.full_name,
+            },
           },
-        },
-      });
+        });
 
-    if (signUpError) throw signUpError;
+      if (signUpError) throw signUpError;
 
-    const user = signUpData.user;
-    if (!user) {
-      throw new Error("No se pudo crear el usuario");
+      const user = signUpData.user;
+      if (!user) {
+        throw new Error("No se pudo crear el usuario");
+      }
+
+      /* 2️⃣ Subir archivos */
+      const timestamp = Date.now();
+      const rutPath = `entities/${user.id}/rut_${timestamp}.pdf`;
+      const chamberPath = `entities/${user.id}/chamber_${timestamp}.pdf`;
+
+      // Subir RUT
+      const { error: rutError } = await supabase.storage
+        .from("entity-documents")
+        .upload(rutPath, rutFile);
+      if (rutError) throw rutError;
+
+      // Subir Cámara de Comercio
+      const { error: chamberError } = await supabase.storage
+        .from("entity-documents")
+        .upload(chamberPath, chamberFile);
+      if (chamberError) throw chamberError;
+
+      /* 3️⃣ Crear registro en tabla 'entities' */
+      const { error: insertError } = await supabase
+        .from("entities")
+        .insert({
+          user_id: user.id, // Enlace con auth
+          name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          nit: formData.nit, // Nuevo campo
+          rut_path: rutPath,
+          chamber_path: chamberPath,
+          status: 'pending', // Por defecto pendiente
+          is_active: true
+        });
+
+      if (insertError) throw insertError;
+
+      setSuccess(true);
+      setTimeout(() => onNavigate("login"), 2500);
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Error al registrar la entidad");
+    } finally {
+      setLoading(false);
     }
-
-    /* 2️⃣ Subir archivos */
-    const timestamp = Date.now();
-
-    const rutPath = `${user.id}/rut_${timestamp}.pdf`;
-    const chamberPath = `${user.id}/chamber_${timestamp}.pdf`;
-
-    const { error: rutError } = await supabase.storage
-      .from("entity-documents")
-      .upload(rutPath, rutFile);
-
-    if (rutError) throw rutError;
-
-    const { error: chamberError } = await supabase.storage
-      .from("entity-documents")
-      .upload(chamberPath, chamberFile);
-
-    if (chamberError) throw chamberError;
-
-    /* 3️⃣ Guardar datos adicionales */
-    const { error: insertError } = await supabase
-      .from("users") // o "entities" (recomendado)
-      .insert({
-        id: user.id, // 🔑 importante
-        email: formData.email,
-        full_name: formData.full_name,
-        phone: formData.phone,
-        role: "entity",
-        rut_path: rutPath,
-        chamber_path: chamberPath,
-      });
-
-    if (insertError) throw insertError;
-
-    setSuccess(true);
-    setTimeout(() => onNavigate("login"), 2500);
-  } catch (err) {
-    console.error(err);
-    setError(err.message || "Error al registrar la entidad");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (
@@ -128,7 +132,7 @@ export default function RegisterEntity({ onNavigate }) {
             <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg flex gap-2 text-green-200">
               <CheckCircle className="w-5 h-5" />
               <span className="text-sm">
-                Entidad registrada correctamente. Redirigiendo...
+                Entidad registrada correctamente. Pendiente de aprobación.
               </span>
             </div>
           )}
@@ -139,6 +143,10 @@ export default function RegisterEntity({ onNavigate }) {
             {/* Nombre */}
             <Input icon={User} label="Nombre de la Entidad" value={formData.full_name}
               onChange={(v) => setFormData({ ...formData, full_name: v })} />
+
+            {/* NIT - Nuevo Campo */}
+            <Input icon={FileText} label="NIT" value={formData.nit}
+              onChange={(v) => setFormData({ ...formData, nit: v })} />
 
             {/* Email */}
             <Input icon={Mail} label="Correo Electrónico" type="email"
