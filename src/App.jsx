@@ -356,6 +356,7 @@ function CitizenDashboard({ user, onLogout, onNavigate }) {
           categories ( id, name, icon, color, responsible_entity ),
           users!reports_assigned_user_id_fkey ( full_name, entity_name )
         `)
+        .eq('user_id', user.id) // Filter by current user
         .order("created_at", { ascending: false });
 
       if (error) throw error;
